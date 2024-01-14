@@ -47,6 +47,7 @@ const Summary = () => {
       },
       {}
     );
+    //@ts-ignore
     window.snap.pay(response.data.transaction.token, {
       onSuccess: async function (result: any) {
         const response = await axios.post(
