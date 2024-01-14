@@ -56,8 +56,6 @@ const Summary = () => {
           },
         );
         alert("payment success!");
-        console.log(response);
-        
       },
     });
   };
