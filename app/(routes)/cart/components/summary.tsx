@@ -33,6 +33,7 @@ const Summary = () => {
       toast.error("Product required")
       return;
     }
+    setDisabled(true)
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/checkout`,
       {
@@ -46,6 +47,11 @@ const Summary = () => {
     window.snap.pay(response.data.transaction.token, {
       onSuccess : function() {
         toast.success("Payment completed.");
+        setFormData({
+          name: "",
+          address : "",
+          phone : "",
+        })
         removeAll()
         setDisabled(false)
       },onError: function(){
