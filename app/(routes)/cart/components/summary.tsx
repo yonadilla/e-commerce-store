@@ -8,6 +8,7 @@ import useCart from "@/hooks/use-cart";
 import axios from "axios";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
+import { Input } from "@/components/ui/input";
 
 const Summary = () => {
   const params = useParams();
@@ -20,24 +21,18 @@ const Summary = () => {
     phone: "",
   });
 
+  const [disabled, setDisabled] = useState(false);
   const totalPrice = items.reduce((total, item) => {
     return total + Number(item.price);
   }, 0);
 
-  useEffect(() => {
-    if (searchParams.get("success")) {
-      toast.success("Payment completed.");
-      removeAll();
-    }
-
-    if (searchParams.get("canceled")) {
-      toast.error("Something went wrong.");
-    }
-  }, [searchParams, removeAll]);
-
   const onCheckout = async (e: any) => {
     e.preventDefault();
-    // Post the form data along with productIds to the server
+    if ( items.length === 0 ) {
+      setDisabled(true);
+      toast.error("Product required")
+      return;
+    }
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/checkout`,
       {
@@ -45,20 +40,22 @@ const Summary = () => {
         formData,
         totalPrice,
       },
-      {}
     );
+    
     //@ts-ignore
     window.snap.pay(response.data.transaction.token, {
-      onSuccess: async function (result: any) {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/webhooks`,
-          {
-            productIds: items.map((item) => item.id),
-          },
-        );
-        alert("payment success!");
+      onSuccess : function() {
+        toast.success("Payment completed.");
+        removeAll()
+        setDisabled(false)
+      },onError: function(){
+        setDisabled(false)
+        toast.error("Something wrong");
       },
-    });
+      onPending : function() {
+        setDisabled(false)
+      },
+    })
   };
 
   const handleInputChange = (e: any) => {
@@ -89,8 +86,8 @@ const Summary = () => {
     <form className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
       <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
       <div className="mt-6 space-y-4">
-        <div className="grid grid-cols-3 gap-5">
-          <input
+        <div className="grid grid-cols-1 gap-5">
+          <Input
             type="text"
             name="name"
             placeholder="Name"
@@ -98,15 +95,7 @@ const Summary = () => {
             onChange={handleInputChange}
             className="border w-full"
           />
-          <input
-            type="text"
-            name="address"
-            placeholder="Address"
-            value={formData.address}
-            onChange={handleInputChange}
-            className="border"
-          />
-          <input
+          <Input
             type="text"
             name="phone"
             placeholder="Phone"
@@ -114,13 +103,22 @@ const Summary = () => {
             onChange={handleInputChange}
             className="border"
           />
+          <Input
+            type="text"
+            name="address"
+            placeholder="Address"
+            value={formData.address}
+            onChange={handleInputChange}
+            className="border"
+          />
+          
         </div>
         <div className="flex items-center justify-between border-t border-gray-200 pt-4">
           <div className="text-base font-medium text-gray-900">Order Total</div>
           <Currency value={totalPrice} />
         </div>
       </div>
-      <Button onClick={onCheckout} className="w-full mt-6">
+      <Button disabled={disabled} onClick={onCheckout} className="w-full mt-6">
         Check Out
       </Button>
     </form>
